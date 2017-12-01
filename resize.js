@@ -99,9 +99,11 @@ function isValidData() {
 
 function getSize() {
     if (width != null && height == null) {
-        return [width, width * 2, width * 3];
+        let w = parseInt(width);
+        return [w, w * 2, w * 3];
     } else if (width == null && height != null) {
-        return [height, height * 2, height * 3];
+        let h = parseHeight(height);
+        return [h, h * 2, h * 3];
     } else if (element == "nav_bar") {
         if (defaultSize == "--min") {
             return minimumSizes["nav_bar"];
@@ -124,8 +126,7 @@ function getSize() {
 }
 
 function resizeImage(buffer, width, height, savePath, fileName) {
-    let filePath = `${savePath}${fileName}`;
-    console.log(filePath);
+    let filePath = `${savePath}${fileName}`;    
     sharp(buffer)
         .resize(width, height)
         .toFile(filePath)
@@ -137,27 +138,56 @@ function resizeImage(buffer, width, height, savePath, fileName) {
         })
 }
 
-if (isValidData()) {
-    if(!fs.existsSync(imageLocation)) {
-        console.log(`${imageLocation} no such file or directory.`);
-        return;
-    }
-    let buffer = fs.readFileSync(imageLocation);
-    let fileInfo = path.parse(imageLocation);    
-    if (fileInfo == null) {
-        console.log("Error while getting image information");
-        return;
-    }
-    // Save path
-    let dirPath = `${fileInfo.dir}/${fileInfo.name}_resized`;
-    while (fs.existsSync(dirPath)) {
-        dirPath += "_copy";
-    }
 
-    fs.mkdirSync(dirPath);
-    let size = getSize();
-    console.log(`Sizes: ${size}`);
-    for (let i = 0; i < size.length; i++) {
-        resizeImage(buffer, size[i], size[i], `${dirPath}/`, `${fileInfo.name}_${i + 1}x.${fileInfo.ext}`);
+
+function createContentFile(images, path) {
+    var object = {
+        "images": images,
+        "info": {
+            "author": "xcode",
+            "version": 1
+        }
+    }
+    var json = JSON.stringify(object);
+    fs.writeFileSync(`${path}/Contents.json`, json, 'utf8');
+}
+
+function main() {
+    if (isValidData()) {
+        if (!fs.existsSync(imageLocation)) {
+            console.log(`${imageLocation} no such file or directory.`);
+            return;
+        }
+        let buffer = fs.readFileSync(imageLocation);
+        let fileInfo = path.parse(imageLocation);
+        if (fileInfo == null) {
+            console.log("Error while getting image information");
+            return;
+        }
+        // Save path
+        let dirPath = `${fileInfo.dir}/${fileInfo.name}.imageset`;
+        while (fs.existsSync(dirPath)) {
+            dirPath += "_copy";
+        }
+
+        fs.mkdirSync(dirPath);
+        let size = getSize();
+        console.log(`Sizes: ${size}`);
+        let contentFileImages = [];
+        for (let i = 0; i < size.length; i++) {
+            let filename = i == 0 ? fileInfo.name : `${fileInfo.name}_${i + 1}x`;
+            filename = `${filename}${fileInfo.ext}`;
+            resizeImage(buffer, size[i], size[i], `${dirPath}/`, filename);
+
+            let dictionary = {};
+            dictionary["filename"] = filename;
+            dictionary["idiom"] = "universal";
+            dictionary["scale"] = `${i + 1}x`;
+            contentFileImages.push(dictionary);
+        }
+
+        createContentFile(contentFileImages, dirPath);
     }
 }
+
+main();
