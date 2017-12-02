@@ -1,5 +1,5 @@
 # ios-icon-resizer
-NodeJs script to resize icon for iOS UI elements like Tab bar, navigation bar &amp; tool bar.
+NodeJs script to resize icon for iOS UI elements like Tab bar, navigation bar &amp; tool bar. It will give you the .imageset folder which you can easily drag n drop into Xcode assets folder.
 
 ## Getting Started
 
